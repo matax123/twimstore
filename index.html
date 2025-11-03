@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TwimStore</title>
+    <link rel="icon" type="image/png" href="./assets/logo.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white">
+    <!-- Header -->
+    <header class="border-b border-gray-800 sticky top-0 bg-black z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <img src="./assets/logo.jpg" alt="TwimStore">
+            </h1>
+            <button onclick="toggleCart()" class="relative">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="fixed top-0 right-0 h-full w-96 bg-gray-900 border-l border-gray-800 transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
+        <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+            <h2 class="text-xl font-bold">Carrito</h2>
+            <button onclick="toggleCart()" class="text-2xl">&times;</button>
+        </div>
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6">
+            <p class="text-gray-400">Tu carrito está vacío</p>
+        </div>
+        <div class="border-t border-gray-800 p-6">
+            <div class="flex justify-between mb-4 text-xl font-bold">
+                <span>Total:</span>
+                <span id="cart-total">$0</span>
+            </div>
+            <button onclick="goToCheckout()" class="w-full bg-white text-black py-3 font-bold hover:bg-gray-200 transition">
+                IR A PAGAR
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content" class="container mx-auto px-4 py-8">
+        <h2 class="text-3xl font-bold mb-8">Productos</h2>
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+    </main>
+
+    <!-- Payment Instructions Modal -->
+    <div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-800">
+                <h2 class="text-2xl font-bold">Instrucciones de Pago</h2>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="bg-gray-800 p-4 rounded">
+                    <h3 class="font-bold mb-3 text-lg">Datos del Cliente</h3>
+                    <div class="space-y-2 text-sm">
+                        <p><span class="text-gray-400">Nombre:</span> <span id="modal-name" class="font-semibold"></span></p>
+                        <p><span class="text-gray-400">Email:</span> <span id="modal-email" class="font-semibold"></span></p>
+                        <p><span class="text-gray-400">Teléfono:</span> <span id="modal-phone" class="font-semibold"></span></p>
+                        <p><span class="text-gray-400">Dirección:</span> <span id="modal-address" class="font-semibold"></span></p>
+                    </div>
+                </div>
+
+                <div class="bg-green-900 bg-opacity-30 border border-green-700 p-4 rounded">
+                    <h3 class="font-bold mb-3 text-lg text-green-400">Datos Bancarios para Transferencia</h3>
+                    <div class="space-y-2 text-sm">
+                        <p><span class="text-gray-400">Banco:</span> <span class="font-semibold">Banco Chile</span></p>
+                        <p><span class="text-gray-400">Tipo de Cuenta:</span> <span class="font-semibold">Cuenta Corriente</span></p>
+                        <p><span class="text-gray-400">Número de Cuenta:</span> <span class="font-semibold">123456789</span></p>
+                        <p><span class="text-gray-400">RUT:</span> <span class="font-semibold">12.345.678-9</span></p>
+                        <p><span class="text-gray-400">Titular:</span> <span class="font-semibold">TwimStore SpA</span></p>
+                        <p><span class="text-gray-400">Email:</span> <span class="font-semibold">pagos_ts@gmail.com</span></p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-4 rounded">
+                    <h3 class="font-bold mb-3 text-lg">Resumen de Compra</h3>
+                    <div id="modal-items" class="space-y-2 mb-4 text-sm"></div>
+                    <div class="border-t border-gray-700 pt-3">
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>Total a Transferir:</span>
+                            <span id="modal-total" class="text-green-400"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-900 bg-opacity-30 border border-yellow-700 p-4 rounded">
+                    <h3 class="font-bold mb-2 text-yellow-400">⚠️ Importante</h3>
+                    <ul class="text-sm space-y-1 list-disc list-inside">
+                        <li>Realiza la transferencia por el monto exacto indicado</li>
+                        <li>Recibirás un email de confirmación en 24-48 horas</li>
+                        <li>Puedes contactarnos mediante instagram: <a href="https://www.instagram.com/twimstore">@twimstore</a></li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-800 p-4 rounded">
+                    <h3 class="font-bold mb-3 text-lg">Comprobante de Pago</h3>
+                    <div class="space-y-3">
+                        <label class="block">
+                            <span class="text-sm text-gray-400 mb-2 block">Sube una foto o captura de tu comprobante de transferencia *</span>
+                            <input type="file" id="payment-receipt" accept="image/*" onchange="previewReceipt(event)" class="w-full bg-gray-900 border border-gray-700 px-4 py-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-gray-200">
+                        </label>
+                        <div id="receipt-preview" class="hidden mt-3">
+                            <img id="receipt-image" src="" alt="Vista previa del comprobante" class="w-full max-h-64 object-contain bg-gray-900 border border-gray-700 rounded">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="hidden bg-blue-900 bg-opacity-30 border border-blue-700 p-4 rounded flex items-center gap-3">
+                    <svg class="animate-spin h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-blue-400 font-semibold">Procesando tu compra...</span>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-800 flex gap-4">
+                <button id="btn-close" onclick="closePaymentModal()" class="flex-1 bg-gray-700 text-white py-3 font-bold hover:bg-gray-600 transition rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                    CERRAR
+                </button>
+                <button id="btn-confirm" onclick="confirmPayment()" class="flex-1 bg-white text-black py-3 font-bold hover:bg-gray-200 transition rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <svg id="confirm-spinner" class="hidden animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="confirm-text">CONFIRMAR QUE TRANSFERÍ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Page -->
+    <div id="checkout-page" class="hidden container mx-auto px-4 py-8">
+        <button onclick="backToShop()" class="mb-6 flex items-center hover:text-gray-400">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver a la tienda
+        </button>
+        
+        <h2 class="text-3xl font-bold mb-8">Finalizar Compra</h2>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <div>
+                <form id="checkout-form" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Nombre completo</label>
+                        <input type="text" id="fullname" required class="w-full bg-gray-900 border border-gray-700 px-4 py-2 focus:outline-none focus:border-white">
+                    </div>
+                    <div>
+                        <label class="block mb-2">Email</label>
+                        <input type="email" id="email" required class="w-full bg-gray-900 border border-gray-700 px-4 py-2 focus:outline-none focus:border-white">
+                    </div>
+                    <div>
+                        <label class="block mb-2">Teléfono</label>
+                        <input type="tel" id="phone" required class="w-full bg-gray-900 border border-gray-700 px-4 py-2 focus:outline-none focus:border-white">
+                    </div>
+                    <div>
+                        <label class="block mb-2">Dirección</label>
+                        <input type="text" id="address" required class="w-full bg-gray-900 border border-gray-700 px-4 py-2 focus:outline-none focus:border-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-2">Ciudad</label>
+                            <input type="text" id="city" required class="w-full bg-gray-900 border border-gray-700 px-4 py-2 focus:outline-none focus:border-white">
+                        </div>
+                        <div>
+                            <label class="block mb-2">Código Postal</label>
+                            <input type="text" id="zipcode" required class="w-full bg-gray-900 border border-gray-700 px-4 py-2 focus:outline-none focus:border-white">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div>
+                <div class="bg-gray-900 border border-gray-800 p-6">
+                    <h3 class="text-xl font-bold mb-4">Resumen de compra</h3>
+                    <div id="checkout-items" class="space-y-3 mb-6"></div>
+                    <div class="border-t border-gray-800 pt-4">
+                        <div class="flex justify-between mb-2">
+                            <span>Subtotal</span>
+                            <span id="checkout-subtotal">$0</span>
+                        </div>
+                        <div class="flex justify-between mb-2">
+                            <span>Envío</span>
+                            <span>$0</span>
+                        </div>
+                        <div class="flex justify-between text-xl font-bold mt-4">
+                            <span>Total</span>
+                            <span id="checkout-total">$0</span>
+                        </div>
+                    </div>
+                    <button onclick="completePurchase()" class="w-full bg-white text-black py-3 font-bold mt-6 hover:bg-gray-200 transition">
+                        CONFIRMAR COMPRA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const products = [
+            { id: 1, name: "J3 Off-Noir", price: 50000, image: "./assets/img/1.png" },
+            { id: 2, name: "J4 Midnight Navy", price: 50000, image: "./assets/img/2.png" },
+            { id: 3, name: "AF1 Nocta", price: 50000, image: "./assets/img/3.png" },
+            { id: 4, name: "Louis Vuitton Trainer", price: 50000, image: "./assets/img/4.png" },
+            { id: 5, name: "Conjunto Nike Tech Gris/Negro", price: 40000, image: "./assets/img/5.png" },
+        ];
+
+        let cart = [];
+        let orderData = null;
+
+        // URL de tu API - CAMBIA ESTA URL POR LA DE TU API
+        const API_URL = 'http://localhost:5001/api/v1/SendStoreEmail';
+
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = products.map(product => `
+                <div class="border border-gray-800 bg-gray-900 hover:border-gray-600 transition">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-64 object-contain bg-gray-800 border-b border-gray-800">
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2">${product.name}</h3>
+                        <p class="text-2xl mb-4">$${product.price.toLocaleString()}</p>
+                        <button onclick="addToCart(${product.id})" class="w-full bg-white text-black py-2 font-bold hover:bg-gray-200 transition">
+                            AGREGAR AL CARRITO
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            
+            updateCart();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCart();
+        }
+
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    updateCart();
+                }
+            }
+        }
+
+        function updateCart() {
+            const cartCount = document.getElementById('cart-count');
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            cartCount.textContent = totalItems;
+            cartTotal.textContent = `$${totalPrice.toLocaleString()}`;
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-400">Tu carrito está vacío</p>';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="flex items-center gap-4 mb-4 pb-4 border-b border-gray-800">
+                        <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-bold">${item.name}</h4>
+                            <p class="text-sm text-gray-400">$${item.price.toLocaleString()}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 bg-gray-800 hover:bg-gray-700">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)" class="w-6 h-6 bg-gray-800 hover:bg-gray-700">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function toggleCart() {
+            const sidebar = document.getElementById('cart-sidebar');
+            sidebar.classList.toggle('translate-x-full');
+        }
+
+        function goToCheckout() {
+            if (cart.length === 0) {
+                alert('Tu carrito está vacío');
+                return;
+            }
+            
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('checkout-page').classList.remove('hidden');
+            toggleCart();
+            updateCheckout();
+        }
+
+        function backToShop() {
+            document.getElementById('main-content').classList.remove('hidden');
+            document.getElementById('checkout-page').classList.add('hidden');
+        }
+
+        function updateCheckout() {
+            const checkoutItems = document.getElementById('checkout-items');
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal + 0;
+            
+            checkoutItems.innerHTML = cart.map(item => `
+                <div class="flex justify-between text-sm">
+                    <span>${item.name} x${item.quantity}</span>
+                    <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('checkout-subtotal').textContent = `$${subtotal.toLocaleString()}`;
+            document.getElementById('checkout-total').textContent = `$${total.toLocaleString()}`;
+        }
+
+        function completePurchase() {
+            const form = document.getElementById('checkout-form');
+            
+            if (!form.checkValidity()) {
+                alert('Por favor completa todos los campos requeridos');
+                form.reportValidity();
+                return;
+            }
+
+            // Guardar datos del cliente
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal + 0;
+
+            orderData = {
+                customer: {
+                    fullname: document.getElementById('fullname').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    zipcode: document.getElementById('zipcode').value
+                },
+                items: cart.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    subtotal: item.price * item.quantity
+                })),
+                total: total
+            };
+
+            // Mostrar datos en el modal
+            document.getElementById('modal-name').textContent = orderData.customer.fullname;
+            document.getElementById('modal-email').textContent = orderData.customer.email;
+            document.getElementById('modal-phone').textContent = orderData.customer.phone;
+            document.getElementById('modal-address').textContent = `${orderData.customer.address}, ${orderData.customer.city}, ${orderData.customer.zipcode}`;
+
+            // Mostrar items de compra
+            document.getElementById('modal-items').innerHTML = cart.map(item => `
+                <div class="flex justify-between">
+                    <span>${item.name} x${item.quantity}</span>
+                    <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('modal-total').textContent = `$${total.toLocaleString()}`;
+
+            // Mostrar el modal
+            document.getElementById('payment-modal').classList.remove('hidden');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.add('hidden');
+            // Limpiar el input de archivo y la vista previa
+            document.getElementById('payment-receipt').value = '';
+            document.getElementById('receipt-preview').classList.add('hidden');
+            // Resetear estado de loading
+            setLoadingState(false);
+        }
+
+        function previewReceipt(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('receipt-image').src = e.target.result;
+                    document.getElementById('receipt-preview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function setLoadingState(isLoading) {
+            const btnClose = document.getElementById('btn-close');
+            const btnConfirm = document.getElementById('btn-confirm');
+            const confirmSpinner = document.getElementById('confirm-spinner');
+            const confirmText = document.getElementById('confirm-text');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            if (isLoading) {
+                btnClose.disabled = true;
+                btnConfirm.disabled = true;
+                confirmSpinner.classList.remove('hidden');
+                confirmText.textContent = 'PROCESANDO...';
+                loadingIndicator.classList.remove('hidden');
+            } else {
+                btnClose.disabled = false;
+                btnConfirm.disabled = false;
+                confirmSpinner.classList.add('hidden');
+                confirmText.textContent = 'CONFIRMAR QUE TRANSFERÍ';
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        async function confirmPayment() {
+            const receiptInput = document.getElementById('payment-receipt');
+            
+            if (!receiptInput.files || receiptInput.files.length === 0) {
+                alert('Por favor sube el comprobante de tu transferencia antes de confirmar.');
+                return;
+            }
+
+            // Activar estado de carga
+            setLoadingState(true);
+
+            try {
+                // Leer el archivo como base64
+                const file = receiptInput.files[0];
+                const base64Receipt = await fileToBase64(file);
+
+                // Preparar datos para enviar
+                const payload = {
+                    to: 'spambasurita50@gmail.com',
+                    subject: 'Compra de TwimStore',
+                    message: formatearOrdenParaEmail(orderData),
+                    comprobante: base64Receipt,
+                    comprobanteExtension: file.type
+                };
+
+                // Hacer petición a la API
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                alert('¡Gracias por tu compra! Hemos recibido tu confirmación y comprobante de pago.\n\nRecibirás un email una vez que verifiquemos tu pago.\nRevisa tu correo en las próximas 24-48 horas.');
+                
+                // Limpiar carrito y volver a la tienda
+                cart = [];
+                updateCart();
+                closePaymentModal();
+                backToShop();
+                
+                // Limpiar formulario
+                document.getElementById('checkout-form').reset();
+
+            } catch (error) {
+                console.error('Error al enviar la orden:', error);
+                alert('Hubo un error al procesar tu compra. Por favor intenta nuevamente o contacta a soporte.\n\nError: ' + error.message);
+                setLoadingState(false);
+            }
+        }
+
+        // Función auxiliar para convertir archivo a base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]); // Remover el prefijo data:image/...;base64,
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+function formatearOrdenParaEmail(orderData) {
+    let html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">
+                Detalles de la Compra
+            </h2>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <h3 style="color: #555; margin-top: 0;">Datos del Cliente</h3>
+                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${orderData.customer.fullname}</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${orderData.customer.email}</p>
+                <p style="margin: 5px 0;"><strong>Teléfono:</strong> ${orderData.customer.phone}</p>
+                <p style="margin: 5px 0;"><strong>Dirección:</strong> ${orderData.customer.address}</p>
+                <p style="margin: 5px 0;"><strong>Ciudad:</strong> ${orderData.customer.city}</p>
+                <p style="margin: 5px 0;"><strong>Código Postal:</strong> ${orderData.customer.zipcode}</p>
+            </div>
+            
+            <h3 style="color: #555;">Productos</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background-color: #4CAF50; color: white;">
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">#</th>
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Producto</th>
+                        <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Precio</th>
+                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Cant.</th>
+                        <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    orderData.items.forEach((item, index) => {
+        html += `
+                    <tr style="background-color: ${index % 2 === 0 ? '#f9f9f9' : 'white'};">
+                        <td style="padding: 10px; border: 1px solid #ddd;">${index + 1}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${item.name}</td>
+                        <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">$${item.price.toLocaleString('es-CL')}</td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">${item.quantity}</td>
+                        <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">$${item.subtotal.toLocaleString('es-CL')}</td>
+                    </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+            
+            <div style="background-color: #4CAF50; color: white; padding: 15px; border-radius: 5px; text-align: right;">
+                <h3 style="margin: 0;">Total: $${orderData.total.toLocaleString('es-CL')}</h3>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+        renderProducts();
+    </script>
+</body>
+</html>
